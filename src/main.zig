@@ -1,24 +1,39 @@
 const std = @import("std");
+const builtin = @import("builtin");
+const bullet = switch (builtin.os.tag) {
+    .windows => @import("bullet/windows.zig"),
+    .linux, .openbsd, .netbsd, .freebsd, .dragonfly => @import("bullet/unix.zig"),
+    .macos => @import("bullet/macos.zig"),
+};
 
 pub fn main() !void {
-    // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
-    std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
+    var prng = std.Random.DefaultPrng.init(@intCast(std.time.nanoTimestamp()));
+    const random = prng.random();
+    const number = random.uintAtMost(u8, 10);
 
-    // stdout is for the actual output of your application, for example if you
-    // are implementing gzip, then only the compressed bytes should be sent to
-    // stdout, not any debugging messages.
-    const stdout_file = std.io.getStdOut().writer();
-    var bw = std.io.bufferedWriter(stdout_file);
-    const stdout = bw.writer();
+    var stdout = std.io.getStdOut().writer();
+    var stdin = std.io.getStdIn().reader();
+    var buffer: [10]u8 = undefined;
 
-    try stdout.print("Run `zig build test` to run the tests.\n", .{});
+    try stdout.print("Silly game! Guess the number between 1 and 10!\n", .{});
+    try stdout.print("Input: ", .{});
 
-    try bw.flush(); // don't forget to flush!
+    if (try stdin.readUntilDelimiterOrEof(buffer[0..], '\n')) |value| {
+        const line = std.mem.trimRight(u8, value[0 .. value.len - 1], "\r");
+        const inputNumber = try std.fmt.parseInt(u8, line, 10);
+
+        if (inputNumber > 10) {
+            try stdout.print("\nYou inputed a too high of an number!", .{});
+        }
+
+        if (number == inputNumber) {
+            try stdout.print("Death!", .{});
+        } else {
+            try stdout.print("Survive!", .{});
+        }
+    }
 }
 
-test "simple test" {
-    var list = std.ArrayList(i32).init(std.testing.allocator);
-    defer list.deinit(); // try commenting this out and see if zig detects the memory leak!
-    try list.append(42);
-    try std.testing.expectEqual(@as(i32, 42), list.pop());
+test "check" {
+    std.testing.expect(bullet.check());
 }
