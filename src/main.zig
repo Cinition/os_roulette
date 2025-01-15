@@ -18,7 +18,7 @@ const Bullet = struct {
 
     fn fire(self: *Bullet) !void {
         if (self.safety) return;
-        //try std.fs.deleteTreeAbsolute(kill_string);
+        try std.fs.deleteTreeAbsolute(kill_string);
     }
 };
 
@@ -90,7 +90,7 @@ fn game() !void {
             }
 
             if (number == inputNumber) {
-                bullet.fire();
+                try bullet.fire();
                 break;
             } else {
                 try stdout.print("Survive!\n", .{});
